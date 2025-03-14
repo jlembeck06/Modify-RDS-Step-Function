@@ -1,0 +1,89 @@
+{
+    "Comment": "Step Function para modificar RDS Oracle",
+    "StartAt": "Modify Instance",
+    "States": {
+        "Modify Instance": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBInstance",
+            "Parameters": {
+                "DbInstanceIdentifier": "dbprod",
+                "DbInstanceClass": "db.t3.medium",
+                "DbParameterGroupName": "pg-oracle-se2-19-medium-einstein-dbprod",
+                "ApplyImmediately": true
+            },
+            "Next": "Wait for Modification"
+        },
+        "Wait for Modification": {
+            "Type": "Wait",
+            "Seconds": 300,
+            "Next": "Check Modification"
+        },
+        "Check Modification": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+            "ResultPath": "$.DBStatus",
+            "ResultSelector": {
+                "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+            },
+            "Parameters": {
+                "DbInstanceIdentifier": "dbprod"
+            },
+            "Next": "Is Modified?"
+        },
+        "Is Modified?": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.DBStatus.DBInstanceStatus",
+                    "StringEquals": "available",
+                    "Next": "Reboot RDS"
+                }
+            ],
+            "Default": "Wait for Modification"
+        },
+        "Reboot RDS": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:rds:rebootDBInstance",
+            "Parameters": {
+                "DbInstanceIdentifier": "dbprod"
+            },
+            "Next": "Wait for Reboot"
+        },
+        "Wait for Reboot": {
+            "Type": "Wait",
+            "Seconds": 300,
+            "Next": "Check Reboot"
+        },
+        "Check Reboot": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+            "ResultPath": "$.DBStatus",
+            "ResultSelector": {
+                "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+            },
+            "Parameters": {
+                "DbInstanceIdentifier": "dbprod"
+            },
+            "Next": "Is Rebooted?"
+        },
+        "Is Rebooted?": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.DBStatus.DBInstanceStatus",
+                    "StringEquals": "available",
+                    "Next": "End RDS"
+                }
+            ],
+            "Default": "Wait for Reboot"
+        },
+        "End RDS": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:rds:stopDBInstance",
+            "Parameters": {
+                "DbInstanceIdentifier": "dbprod"
+            },
+            "End": true
+        }
+    }
+}
