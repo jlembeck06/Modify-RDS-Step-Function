@@ -6,7 +6,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod",
+                "DbInstanceIdentifier": "dbtst",
                 "DbInstanceClass": "db.t3.medium",
                 "DbParameterGroupName": "pg-oracle-se2-19-medium-einstein-dbprod",
                 "ApplyImmediately": true
@@ -26,7 +26,7 @@
                 "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
             },
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Is Modified?"
         },
@@ -45,7 +45,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:rebootDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Wait for Reboot"
         },
@@ -62,7 +62,7 @@
                 "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
             },
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Is Rebooted?"
         },
@@ -81,7 +81,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:stopDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "End": true
         }

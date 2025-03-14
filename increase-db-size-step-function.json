@@ -10,7 +10,7 @@
                 "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
             },
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Is Available?"
         },
@@ -34,7 +34,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:startDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Wait for Available"
         },
@@ -47,7 +47,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod",
+                "DbInstanceIdentifier": "dbtst",
                 "DbInstanceClass": "db.t3.xlarge",
                 "DbParameterGroupName": "pg-oracle-se2-19-xlarge-atualizacao",
                 "ApplyImmediately": true
@@ -67,7 +67,7 @@
                 "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
             },
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "Next": "Is Modified?"
         },
@@ -86,7 +86,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:rds:rebootDBInstance",
             "Parameters": {
-                "DbInstanceIdentifier": "dbprod"
+                "DbInstanceIdentifier": "dbtst"
             },
             "End": true
         }
