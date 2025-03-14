@@ -11,7 +11,8 @@ The purpose of this step function is to increase the size of the database to per
 * DbInstanceClass: Change the database instance class, e.g.: db.t3.xlarge
 * DbParameterGroupName: Change the database parameter group (PG) corresponding to your DbInstanceClass
 
-![alt text](stepfunctions_graph_increase.png)
+![stepfunctions_graph_increase](https://github.com/user-attachments/assets/4a29d79d-2995-436b-95cc-6ee9fc810026)
+
 
 # decrease-db-size-step-function
 
@@ -20,4 +21,4 @@ The purpose of this step function is to return the database size to the same set
 * DbInstanceClass: Change database instance class, e.g.: db.t3.medium
 * DbParameterGroupName: Change database parameter group (PG) corresponding to your DbInstanceClass
 
-![alt text](stepfunctions_graph_decrease.png)
+![stepfunctions_graph_decrease](https://github.com/user-attachments/assets/a7b3c814-a1ba-43d9-95f2-e667b0790523)
