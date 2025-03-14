@@ -1,6 +1,3 @@
-# Modify-RDS
-Modify RDS using step function workflow
-
 # Step Functions paramaters
 Inside each step function json file, there are three variables that you need to change, according to your environment
 
