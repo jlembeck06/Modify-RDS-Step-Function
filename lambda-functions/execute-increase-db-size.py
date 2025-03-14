@@ -1,5 +1,5 @@
-import json
 import boto3
+import json
 
 def lambda_handler(event, context):
     sfn_client = boto3.client('stepfunctions')
