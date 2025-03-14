@@ -4,6 +4,7 @@ import json
 def lambda_handler(event, context):
     sfn_client = boto3.client('stepfunctions')
 
+    # Execute the Step Function
     try:
         # Execute the Step Function
         response = sfn_client.start_execution(
