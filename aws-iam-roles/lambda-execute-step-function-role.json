@@ -8,7 +8,6 @@
                 "states:StartExecution"
             ],
             "Resource": [
-                "arn:aws:states:*:*:stateMachine:*",
                 "arn:aws:states:*:*:stateMachine:*"
             ]
         }
