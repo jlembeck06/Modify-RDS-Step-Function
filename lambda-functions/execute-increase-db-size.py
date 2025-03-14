@@ -7,6 +7,7 @@ def lambda_handler(event, context):
     # Execute the Step Function
     try:
         response = sfn_client.start_execution(
+            # Inform the Step Function ARN
             stateMachineArn='arn-your-step-function',
         )
         
