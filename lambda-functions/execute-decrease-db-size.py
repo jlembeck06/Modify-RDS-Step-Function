@@ -2,12 +2,12 @@ import boto3
 import json
 
 def lambda_handler(event, context):
-    snf_client = boto3.client('stepfunctions')
+    sfn_client = boto3.client('stepfunctions')
 
     try:
         # Execute the Step Function
-        response = snf_client.start_execution(
-            #Inform the Step Function ARN
+        response = sfn_client.start_execution(
+            # Inform the Step Function ARN
             stateMachineArn='arn-your-step-function',
         )
 
