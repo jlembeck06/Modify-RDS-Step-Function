@@ -4,8 +4,9 @@ import boto3
 def lambda_handler(event, context):
     sfn_client = boto3.client('stepfunctions')
 
-    # Execute the Step Function
+    
     try:
+        # Execute the Step Function
         response = sfn_client.start_execution(
             # Inform the Step Function ARN
             stateMachineArn='arn-your-step-function',
@@ -17,8 +18,7 @@ def lambda_handler(event, context):
                 'message': 'Step Function execution started successfully',
                 'executionArn': response['executionArn']
             })
-        }
-        
+        }        
     except Exception as e:
         return {
             'statusCode': 500,
