@@ -7,7 +7,7 @@ def lambda_handler(event, context):
     # Execute the Step Function
     try:
         response = sfn_client.start_execution(
-            stateMachineArn='arn:aws:states:sa-east-1:620200558027:stateMachine:Increase-Database-Size',
+            stateMachineArn='arn-your-step-function',
         )
         
         return {

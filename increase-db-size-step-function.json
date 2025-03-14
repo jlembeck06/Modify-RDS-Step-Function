@@ -49,7 +49,7 @@
             "Parameters": {
                 "DbInstanceIdentifier": "dbtst",
                 "DbInstanceClass": "db.t3.xlarge",
-                "DbParameterGroupName": "pg-oracle-se2-19-xlarge-atualizacao",
+                "DbParameterGroupName": "your-parameter-group-xlarge",
                 "ApplyImmediately": true
             },
             "Next": "Wait for Modification"

@@ -8,7 +8,7 @@
             "Parameters": {
                 "DbInstanceIdentifier": "dbtst",
                 "DbInstanceClass": "db.t3.medium",
-                "DbParameterGroupName": "pg-oracle-se2-19-medium-einstein-dbprod",
+                "DbParameterGroupName": "your-parameter-group-medium",
                 "ApplyImmediately": true
             },
             "Next": "Wait for Modification"
