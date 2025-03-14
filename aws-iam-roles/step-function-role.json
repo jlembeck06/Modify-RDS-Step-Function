@@ -1,0 +1,20 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "rds:DescribeDBInstances",
+                "rds:ModifyDBInstance",
+                "rds:DescribeDBParameterGroups",
+                "rds:ModifyDBParameterGroup",
+                "rds:RebootDBInstance",
+                "rds:StartDBInstance"
+            ],
+            "Resource": [
+                "arn:aws:rds:*:*:db:*",
+                "arn:aws:rds:*:*:pg:*"
+            ],
+            "Effect": "Allow"
+        }
+    ]
+}
