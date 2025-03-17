@@ -1,0 +1,371 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DBInstanceIdentifierName:
+    Type: String
+    Default: databasetst
+    Description: The RDS Oracle instance identifier
+  DBInstanceClassIncrease:
+    Type: String
+    Default: db.t3.xlarge
+    Description: The RDS Oracle instance class to increase
+  DBParameterGroupIncrease:
+    Type: String
+    Default: pg-oracle-se2-19-xlarge
+    Description: The RDS Oracle parameter group to increase
+  DBInstanceClassDecrease:
+    Type: String
+    Default: db.t3.medium
+    Description: The RDS Oracle instance class to decrease
+  DBParameterGroupDecrease:
+    Type: String
+    Default: pg-oracle-se2-19-medium
+    Description: The RDS Oracle parameter group to decrease
+  ENV:
+    Type: String
+    Default: TST
+    Description: Customer Environment
+Resources:
+  StepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StepFunctionExecutePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - rds:ModifyDBInstance
+                  - rds:DescribeDBParameterGroups
+                  - rds:ModifyDBParameterGroup
+                  - rds:RebootDBInstance
+                  - rds:StartDBInstance
+                  - rds:StopDBInstance
+                Resource:
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:*
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:pg:*
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecuteStateMachinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - states:StartExecution
+                Resource:
+                  - !Sub arn:aws:states:*:${AWS::AccountId}:stateMachine:*
+  StepFunctionOne:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub StepFunctionIncreaseDbSize${ENV}
+      RoleArn: !GetAtt StepFunctionRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+           "StartAt": "Check Available",
+           "States": {
+              "Check Available": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                  "ResultPath": "$.DBStatus",
+                  "ResultSelector": {
+                      "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                  },
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                  },
+                  "Next": "Is Available?"
+              },
+              "Is Available?": {
+                  "Type": "Choice",
+                  "Choices": [
+                      {
+                          "Variable": "$.DBStatus.DBInstanceStatus",
+                          "StringEquals": "available",
+                          "Next": "Modify Instance"
+                      },
+                      {
+                          "Variable": "$.DBStatus.DBInstanceStatus",
+                          "StringEquals": "stopped",
+                          "Next": "Start RDS"
+                      }
+                  ],
+                  "Default": "Wait for Available"
+              },
+              "Start RDS": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:startDBInstance",
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                  },
+                  "Next": "Wait for Available"
+              },
+              "Wait for Available": {
+                  "Type": "Wait",
+                  "Seconds": 300,
+                  "Next": "Check Available"
+              },
+              "Modify Instance": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBInstance",
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}",
+                      "DbInstanceClass": "${DBInstanceClassIncrease}",
+                      "DbParameterGroupName": "${DBParameterGroupIncrease}",
+                      "ApplyImmediately": true
+                  },
+                  "Next": "Wait for Modification"
+              },
+              "Wait for Modification": {
+                  "Type": "Wait",
+                  "Seconds": 300,
+                  "Next": "Check Modification"
+              },
+              "Check Modification": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                  "ResultPath": "$.DBStatus",
+                  "ResultSelector": {
+                      "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                  },
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                  },
+                  "Next": "Is Modified?"
+              },
+              "Is Modified?": {
+                  "Type": "Choice",
+                  "Choices": [
+                      {
+                          "Variable": "$.DBStatus.DBInstanceStatus",
+                          "StringEquals": "available",
+                          "Next": "Reboot RDS"
+                      }
+                  ],
+                  "Default": "Wait for Modification"
+              },
+              "Reboot RDS": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:rebootDBInstance",
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                  },
+                  "End": true
+              }
+          }
+          }
+        - DBInstanceIdentifierName: !Ref DBInstanceIdentifierName
+          DBInstanceClassIncrease: !Ref DBInstanceClassIncrease
+          DBParameterGroupIncrease: !Ref DBParameterGroupIncrease
+  StepFunctionTwo:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub StepFunctionDecreaseDbSize${ENV}
+      RoleArn: !GetAtt StepFunctionRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "StartAt": "Modify Instance",
+            "States": {
+                "Modify Instance": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBInstance",
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}",
+                        "DbInstanceClass": "${DBInstanceClassDecrease}",
+                        "DbParameterGroupName": "${DBParameterGroupDecrease}",
+                        "ApplyImmediately": true
+                    },
+                    "Next": "Wait for Modification"
+                },
+                "Wait for Modification": {
+                    "Type": "Wait",
+                    "Seconds": 300,
+                    "Next": "Check Modification"
+                },
+                "Check Modification": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                    "ResultPath": "$.DBStatus",
+                    "ResultSelector": {
+                        "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                    },
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                    },
+                    "Next": "Is Modified?"
+                },
+                "Is Modified?": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.DBStatus.DBInstanceStatus",
+                            "StringEquals": "available",
+                            "Next": "Reboot RDS"
+                        }
+                    ],
+                    "Default": "Wait for Modification"
+                },
+                "Reboot RDS": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:rebootDBInstance",
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                    },
+                    "Next": "Wait for Reboot"
+                },
+                "Wait for Reboot": {
+                    "Type": "Wait",
+                    "Seconds": 300,
+                    "Next": "Check Reboot"
+                },
+                "Check Reboot": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                    "ResultPath": "$.DBStatus",
+                    "ResultSelector": {
+                        "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                    },
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                    },
+                    "Next": "Is Rebooted?"
+                },
+                "Is Rebooted?": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.DBStatus.DBInstanceStatus",
+                            "StringEquals": "available",
+                            "Next": "End RDS"
+                        }
+                    ],
+                    "Default": "Wait for Reboot"
+                },
+                "End RDS": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:stopDBInstance",
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                    },
+                    "End": true
+                }
+            }
+            }
+
+        - DBInstanceIdentifierName: !Ref DBInstanceIdentifierName
+          DBInstanceClassDecrease: !Ref DBInstanceClassDecrease
+          DBParameterGroupDecrease: !Ref DBParameterGroupDecrease
+  LambdaFunctionOne:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub Lambda-Increase-Database-Size-${ENV}
+      Runtime: python3.8
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:StepFunctionIncreaseDbSize${ENV}
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+
+          def lambda_handler(event, context):
+                sfn_client = boto3.client('stepfunctions')
+
+                state_machine_arn = os.environ['STATE_MACHINE_ARN']
+
+                # Execute the Step Function
+                try:
+                    response = sfn_client.start_execution(
+                        # Inform the Step Function ARN
+
+                        stateMachineArn=state_machine_arn
+                    )
+
+                    return {
+                        'statusCode': 200,
+                        'body': json.dumps({
+                            'message': 'Step Function execution started successfully',
+                            'executionArn': response['executionArn']
+                        })
+                    }
+
+                except Exception as e:
+                    return {
+                        'statusCode': 500,
+                        'body': json.dumps({
+                            'message': 'Failed to start Step Function execution',
+                            'error': str(e)
+                        })
+                    }
+  LambdaFunctionTwo:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub Lambda-Decrease-Database-Size-${ENV}
+      Runtime: python3.8
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:StepFunctionDecreaseDbSize${ENV}
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+
+          def lambda_handler(event, context):
+                sfn_client = boto3.client('stepfunctions')
+
+                state_machine_arn = os.environ['STATE_MACHINE_ARN']
+
+                # Execute the Step Function
+                try:
+                    response = sfn_client.start_execution(
+                        # Inform the Step Function ARN
+
+                        stateMachineArn=state_machine_arn
+                    )
+
+                    return {
+                        'statusCode': 200,
+                        'body': json.dumps({
+                            'message': 'Step Function execution started successfully',
+                            'executionArn': response['executionArn']
+                        })
+                    }
+
+                except Exception as e:
+                    return {
+                        'statusCode': 500,
+                        'body': json.dumps({
+                            'message': 'Failed to start Step Function execution',
+                            'error': str(e)
+                        })
+                    }
