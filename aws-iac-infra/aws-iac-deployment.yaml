@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   DBInstanceIdentifierName:
     Type: String
-    Default: databasetst
+    Default: dbtst
     Description: The RDS Oracle instance identifier
   DBInstanceClassIncrease:
     Type: String
@@ -10,7 +10,7 @@ Parameters:
     Description: The RDS Oracle instance class to increase
   DBParameterGroupIncrease:
     Type: String
-    Default: pg-oracle-se2-19-xlarge
+    Default: pg-oracle-se2-19-xlarge-atualizacao
     Description: The RDS Oracle parameter group to increase
   DBInstanceClassDecrease:
     Type: String
@@ -18,7 +18,7 @@ Parameters:
     Description: The RDS Oracle instance class to decrease
   DBParameterGroupDecrease:
     Type: String
-    Default: pg-oracle-se2-19-medium
+    Default: pg-oracle-se2-19-medium-einstein-dbteste
     Description: The RDS Oracle parameter group to decrease
   ENV:
     Type: String
@@ -51,8 +51,11 @@ Resources:
                   - rds:StartDBInstance
                   - rds:StopDBInstance
                 Resource:
-                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:*
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbtst
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbtest
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:pg:*
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbprd
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbprod
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
