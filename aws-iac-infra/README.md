@@ -1,25 +1,24 @@
 # Cloud Formation IaC
-IaC to deploy the entire infrastructure on AWS.
--> IAM Roles
--> Step Functions
--> Lambdas
+IaC to deploy the entire infrastructure on AWS:
+
+IAM Roles / Step Functions / Lambdas
 
 # Cloud Formation Parameters
 
-* DBInstanceIdentifierName
+* DBInstanceIdentifierName:
 The RDS Oracle instance identifier
 
-* DBInstanceClassIncrease
+* DBInstanceClassIncrease:
 The RDS Oracle instance class to increase
 
-* DBParameterGroupIncrease
+* DBParameterGroupIncrease:
 The RDS Oracle parameter group to increase
 
-* DBInstanceClassDecrease
+* DBInstanceClassDecrease:
 The RDS Oracle instance class to decrease
 
-* DBParameterGroupDecrease
+* DBParameterGroupDecrease:
  The RDS Oracle parameter group to decrease
 
-* ENV
+* ENV:
 Customer Environment
