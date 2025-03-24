@@ -240,41 +240,7 @@ Resources:
                     },
                     "Next": "Wait for Reboot"
                 },
-                "Wait for Reboot": {
-                    "Type": "Wait",
-                    "Seconds": 300,
-                    "Next": "Check Reboot"
-                },
-                "Check Reboot": {
-                    "Type": "Task",
-                    "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
-                    "ResultPath": "$.DBStatus",
-                    "ResultSelector": {
-                        "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
-                    },
-                    "Parameters": {
-                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
-                    },
-                    "Next": "Is Rebooted?"
-                },
-                "Is Rebooted?": {
-                    "Type": "Choice",
-                    "Choices": [
-                        {
-                            "Variable": "$.DBStatus.DBInstanceStatus",
-                            "StringEquals": "available",
-                            "Next": "End RDS"
-                        }
-                    ],
-                    "Default": "Wait for Reboot"
-                },
-                "End RDS": {
-                    "Type": "Task",
-                    "Resource": "arn:aws:states:::aws-sdk:rds:stopDBInstance",
-                    "Parameters": {
-                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
-                    },
-                    "End": true
+                "End": true
                 }
             }
             }
@@ -306,7 +272,7 @@ Resources:
                 # Execute the Step Function
                 try:
                     response = sfn_client.start_execution(
-                        # Inform the Step Function ARN
+                        # Get the Step Function ARN
 
                         stateMachineArn=state_machine_arn
                     )
@@ -351,7 +317,7 @@ Resources:
                 # Execute the Step Function
                 try:
                     response = sfn_client.start_execution(
-                        # Inform the Step Function ARN
+                        # Get the Step Function ARN
 
                         stateMachineArn=state_machine_arn
                     )
