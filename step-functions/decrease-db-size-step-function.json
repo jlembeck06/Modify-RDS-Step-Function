@@ -51,7 +51,7 @@
         },
         "Wait for Reboot": {
             "Type": "Wait",
-            "Seconds": 300,
+            "Seconds": 15,
             "Next": "Check Reboot"
         },
         "Check Reboot": {
@@ -72,18 +72,13 @@
                 {
                     "Variable": "$.DBStatus.DBInstanceStatus",
                     "StringEquals": "available",
-                    "Next": "End RDS"
+                    "Next": "Success"
                 }
             ],
             "Default": "Wait for Reboot"
         },
-        "End RDS": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::aws-sdk:rds:stopDBInstance",
-            "Parameters": {
-                "DbInstanceIdentifier": "dbtst"
-            },
-            "End": true
+        "Success": {
+            "Type": "Succeed"
         }
     }
 }
