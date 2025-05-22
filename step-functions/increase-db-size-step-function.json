@@ -88,7 +88,37 @@
             "Parameters": {
                 "DbInstanceIdentifier": "dbtst"
             },
-            "End": true
+        "Wait for Reboot": {
+                "Type": "Wait",
+                "Seconds": 30,
+                "Next": "Check Reboot"
+            },
+            "Check Reboot": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                "ResultPath": "$.DBStatus",
+                "ResultSelector": {
+                    "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                },
+                "Parameters": {
+                    "DbInstanceIdentifier": "dbtst"
+                },
+                "Next": "Is Rebooted?"
+            },
+            "Is Rebooted?": {
+                "Type": "Choice",
+                "Choices": [
+                    {
+                        "Variable": "$.DBStatus.DBInstanceStatus",
+                        "StringEquals": "available",
+                        "Next": "Success"
+                    }
+                ],
+                "Default": "Wait for Reboot"
+            },
+                "Success": {
+                    "Type": "Succeed"
+                }
+            }
         }
     }
-}

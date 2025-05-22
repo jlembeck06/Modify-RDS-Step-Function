@@ -23,7 +23,7 @@ Parameters:
   ENV:
     Type: String
     Default: TST
-    Description: Customer Environment
+    Description: Customer Environment (e.g. TST, PRD, DEV, PROD, etc.)
 Resources:
   StepFunctionRole:
     Type: AWS::IAM::Role
@@ -53,6 +53,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbtst
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbtest
+                  - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbteste
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:pg:*
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbprd
                   - !Sub arn:aws:rds:*:${AWS::AccountId}:db:dbprod
@@ -128,7 +129,7 @@ Resources:
               },
               "Wait for Available": {
                   "Type": "Wait",
-                  "Seconds": 300,
+                  "Seconds": 100,
                   "Next": "Check Available"
               },
               "Modify Instance": {
@@ -144,7 +145,7 @@ Resources:
               },
               "Wait for Modification": {
                   "Type": "Wait",
-                  "Seconds": 300,
+                  "Seconds": 100,
                   "Next": "Check Modification"
               },
               "Check Modification": {
@@ -176,7 +177,38 @@ Resources:
                   "Parameters": {
                       "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
                   },
-                  "End": true
+                  "Next": "Wait for Reboot"
+              },
+              "Wait for Reboot": {
+                  "Type": "Wait",
+                  "Seconds": 15,
+                  "Next": "Check Reboot"
+              },
+              "Check Reboot": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                  "ResultPath": "$.DBStatus",
+                  "ResultSelector": {
+                      "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                  },
+                  "Parameters": {
+                      "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                  },
+                  "Next": "Is Rebooted?"
+              },
+              "Is Rebooted?": {
+                  "Type": "Choice",
+                  "Choices": [
+                      {
+                          "Variable": "$.DBStatus.DBInstanceStatus",
+                          "StringEquals": "available",
+                          "Next": "Success"
+                      }
+                  ],
+                  "Default": "Wait for Reboot"
+              },
+              "Success": {
+                  "Type": "Succeed"
               }
           }
           }
@@ -206,7 +238,7 @@ Resources:
                 },
                 "Wait for Modification": {
                     "Type": "Wait",
-                    "Seconds": 300,
+                    "Seconds": 150,
                     "Next": "Check Modification"
                 },
                 "Check Modification": {
@@ -240,7 +272,36 @@ Resources:
                     },
                     "Next": "Wait for Reboot"
                 },
-                "End": true
+                "Wait for Reboot": {
+                    "Type": "Wait",
+                    "Seconds":15,
+                    "Next": "Check Reboot"
+                },
+                "Check Reboot": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::aws-sdk:rds:describeDBInstances",
+                    "ResultPath": "$.DBStatus",
+                    "ResultSelector": {
+                        "DBInstanceStatus.$": "$.DbInstances[0].DbInstanceStatus"
+                    },
+                    "Parameters": {
+                        "DbInstanceIdentifier": "${DBInstanceIdentifierName}"
+                    },
+                    "Next": "Is Rebooted?"
+                },
+                "Is Rebooted?": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.DBStatus.DBInstanceStatus",
+                            "StringEquals": "available",
+                            "Next": "Success"
+                        }
+                    ],
+                    "Default": "Wait for Reboot"
+                },
+                "Success": {
+                    "Type": "Succeed"
                 }
             }
             }
